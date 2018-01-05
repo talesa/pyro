@@ -62,6 +62,19 @@ class Trace(networkx.DiGraph):
         """
         return Trace(super(Trace, self).copy(), graph_type=self.graph_type)
 
+    def site_log_pdf(self, site, reduce=True):
+        site = self.nodes[site]
+        key = "log_pdf" if reduce else "batch_log_pdf"
+        try:
+            return site[key]
+        except KeyError:
+            pass
+        batch_log_pdf = site["fn"].batch_log_pdf(
+            site["value"], *site["args"], **site["kwargs"]) * site["scale"]
+        site["batch_log_pdf"] = batch_log_pdf
+        site["log_pdf"] = batch_log_pdf.sum()
+        return site[key]
+
     def log_pdf(self, site_filter=lambda name, site: True):
         """
         Compute the local and overall log-probabilities of the trace.
