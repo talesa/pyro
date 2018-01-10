@@ -46,7 +46,8 @@ class Trace_ELBO(object):
     """
     def __init__(self,
                  num_particles=1,
-                 enum_discrete=False):
+                 enum_discrete=False,
+                 reduce_elbo=True):
         """
         :param num_particles: the number of particles/samples used to form the ELBO (gradient) estimators
         :param bool enum_discrete: whether to sum over discrete latent variables, rather than sample them
@@ -54,6 +55,7 @@ class Trace_ELBO(object):
         super(Trace_ELBO, self).__init__()
         self.num_particles = num_particles
         self.enum_discrete = enum_discrete
+        self.reduce_elbo = reduce_elbo
 
     def _get_traces(self, model, guide, *args, **kwargs):
         """
@@ -97,10 +99,16 @@ class Trace_ELBO(object):
         Evaluates the ELBO with an estimator that uses num_particles many samples/particles.
         """
         elbo = 0.0
+
         for weight, model_trace, guide_trace, log_r in self._get_traces(model, guide, *args, **kwargs):
+            if not self.reduce_elbo:
+                model_trace.compute_batch_log_pdf()
+                guide_trace.compute_batch_log_pdf()
             elbo_particle = weight * 0
 
-            log_pdf = "batch_log_pdf" if (self.enum_discrete and weight.size(0) > 1) else "log_pdf"
+            log_pdf = "batch_log_pdf" if (self.enum_discrete and weight.size(0) > 1 or
+                                          not self.reduce_elbo)\
+                                      else "log_pdf"
             for name in model_trace.nodes.keys():
                 if model_trace.nodes[name]["type"] == "sample":
                     if model_trace.nodes[name]["is_observed"]:
@@ -116,10 +124,13 @@ class Trace_ELBO(object):
             else:
                 elbo_particle[weight == 0] = 0.0
 
-            elbo += torch_data_sum(weight * elbo_particle)
+            if self.reduce_elbo:
+                elbo += torch_data_sum(weight * elbo_particle)
+            else:
+                elbo += weight * elbo_particle
 
         loss = -elbo
-        if np.isnan(loss):
+        if self.reduce_elbo and np.isnan(loss):
             warnings.warn('Encountered NAN loss')
         return loss
 
