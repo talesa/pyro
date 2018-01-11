@@ -59,7 +59,7 @@ class Gamma(Distribution):
             np_sample = [np_sample]
         x = Variable(torch.Tensor(np_sample).type_as(self.alpha.data))
         x = x.expand(self.shape())
-        return x
+        return x.clamp_(min=1e-40, max=1e30)
 
     def batch_log_pdf(self, x):
         alpha = self.alpha.expand(self.shape(x))
@@ -77,3 +77,10 @@ class Gamma(Distribution):
 
     def analytic_var(self):
         return self.alpha / torch.pow(self.beta, 2.0)
+
+    def relative_entropy(self, target):
+        term1 = (self.alpha - target.alpha) * torch.digamma(self.alpha)
+        term2 = torch.lgamma(target.alpha) - torch.lgamma(self.alpha)
+        term3 = target.alpha * (torch.log(self.beta) - torch.log(target.beta))
+        term4 = (self.alpha / self.beta) * (target.beta - self.beta)
+        return 1.0e-7 * (term1 + term2 + term3 + term4).sum()
