@@ -50,7 +50,8 @@ class Trace_ELBO(object):
     """
     def __init__(self,
                  num_particles=1,
-                 enum_discrete=False):
+                 enum_discrete=False,
+                 analytic_kl=False):
         """
         :param num_particles: the number of particles/samples used to form the ELBO (gradient) estimators
         :param bool enum_discrete: whether to sum over discrete latent variables, rather than sample them
@@ -58,6 +59,7 @@ class Trace_ELBO(object):
         super(Trace_ELBO, self).__init__()
         self.num_particles = num_particles
         self.enum_discrete = enum_discrete
+        self.analytic_kl = analytic_kl
 
     def _get_traces(self, model, guide, *args, **kwargs):
         """
@@ -156,7 +158,10 @@ class Trace_ELBO(object):
 
                         if not batched:
                             guide_log_pdf = guide_log_pdf.sum()
-                        elbo_particle += model_log_pdf - guide_log_pdf
+                        if self.analytic_kl:
+                            elbo_particle -= guide_site["fn"].relative_entropy(model_site["fn"])
+                        else:
+                            elbo_particle += model_log_pdf - guide_log_pdf
                         surrogate_elbo_particle += model_log_pdf
 
                         if not is_identically_zero(entropy_term):

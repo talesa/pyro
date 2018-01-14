@@ -3,7 +3,15 @@ from __future__ import absolute_import, division, print_function
 import torch
 
 from .clipped_adam import ClippedAdam as pt_ClippedAdam
+from .adagrad_rmsprop import AdagradRMSProp as pt_AdagradRMSProp
 from .optim import PyroOptim
+
+
+def AdagradRMSProp(optim_args):
+    """
+    A mashup optimizer
+    """
+    return PyroOptim(pt_AdagradRMSProp, optim_args)
 
 
 def Adam(optim_args):
