@@ -8,6 +8,12 @@ examples/dmm/*.pkl
 processed
 raw
 
+*.*[0-9]
+*.bak
+*.old
+*.bk
+*.py2
+
 # Logs
 logs
 *.log

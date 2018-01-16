@@ -22,9 +22,15 @@ class Gamma(TorchDistribution):
     def sample(self, *args, **kwargs):
         return super(Gamma, self).sample(*args, **kwargs).clamp_(min=1.0e-35, max=1.0e30)
 
+    def entropy(self):
+        term1 = self.alpha - torch.log(self.beta)
+        term2 = torch.lgamma(self.alpha)
+        term3 = (1.0 - self.alpha) * torch.digamma(self.alpha)
+        return (term1 + term2 + term3).sum()
+
     def relative_entropy(self, target):
         term1 = (self.alpha - target.alpha) * torch.digamma(self.alpha)
         term2 = torch.lgamma(target.alpha) - torch.lgamma(self.alpha)
         term3 = target.alpha * (torch.log(self.beta) - torch.log(target.beta))
         term4 = (self.alpha / self.beta) * (target.beta - self.beta)
-        return 1.0e-7 * (term1 + term2 + term3 + term4).sum()
+        return (term1 + term2 + term3 + term4).sum()

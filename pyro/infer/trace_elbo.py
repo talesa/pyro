@@ -52,7 +52,7 @@ class Trace_ELBO(object):
     def __init__(self,
                  num_particles=1,
                  enum_discrete=False,
-                 analytic_kl=False):
+                 mean_field_analytic_entropy=False):
         """
         :param num_particles: the number of particles/samples used to form the ELBO (gradient) estimators
         :param bool enum_discrete: whether to sum over discrete latent variables, rather than sample them
@@ -60,7 +60,7 @@ class Trace_ELBO(object):
         super(Trace_ELBO, self).__init__()
         self.num_particles = num_particles
         self.enum_discrete = enum_discrete
-        self.analytic_kl = analytic_kl
+        self.mean_field_analytic_entropy = mean_field_analytic_entropy
 
     def _get_traces(self, model, guide, *args, **kwargs):
         """
@@ -94,7 +94,10 @@ class Trace_ELBO(object):
             model_trace = prune_subsample_sites(model_trace)
 
             guide_trace.compute_score_parts()
-            log_r = model_trace.log_pdf() - guide_trace.log_pdf()
+            if not self.mean_field_analytic_entropy:
+                log_r = model_trace.log_pdf() - guide_trace.log_pdf()
+            else:
+                log_r = model_trace.log_pdf()
             weight = 1.0 / self.num_particles
             yield weight, model_trace, guide_trace, log_r
 
@@ -119,7 +122,10 @@ class Trace_ELBO(object):
                         elbo_particle += model_trace.nodes[name][log_pdf]
                     else:
                         elbo_particle += model_trace.nodes[name][log_pdf]
-                        elbo_particle -= guide_trace.nodes[name][log_pdf]
+                        if not self.mean_field_analytic_entropy:
+                            elbo_particle -= guide_trace.nodes[name][log_pdf]
+                        else:
+                            elbo_particle += guide_trace.nodes[name]["fn"].entropy()
 
             # drop terms of weight zero to avoid nans
             if isinstance(weight, numbers.Number):
@@ -166,21 +172,24 @@ class Trace_ELBO(object):
 
                         if not batched:
                             guide_log_pdf = guide_log_pdf.sum()
-                        if self.analytic_kl:
-                            elbo_particle -= guide_site["fn"].relative_entropy(model_site["fn"])
+                        if self.mean_field_analytic_entropy:
+                            lp_ent = model_log_pdf + guide_site["fn"].entropy()
+                            elbo_particle += lp_ent
+                            surrogate_elbo_particle += lp_ent
                         else:
-                            elbo_particle += model_log_pdf - guide_log_pdf
-                        surrogate_elbo_particle += model_log_pdf
+                            lp_lq = model_log_pdf - guide_log_pdf
+                            elbo_particle += lp_lq
+                            surrogate_elbo_particle += lp_lq
 
-                        if not is_identically_zero(entropy_term):
-                            if not batched:
-                                entropy_term = entropy_term.sum()
-                            surrogate_elbo_particle -= entropy_term
+                        #if not is_identically_zero(entropy_term):
+                        #    if not batched:
+                        #        entropy_term = entropy_term.sum()
+                        #    surrogate_elbo_particle -= entropy_term
 
                         if not is_identically_zero(score_function_term):
                             if not batched:
                                 score_function_term = score_function_term.sum()
-                            surrogate_elbo_particle += log_r.detach() * score_function_term
+                            #surrogate_elbo_particle += log_r.detach() * score_function_term
 
             # drop terms of weight zero to avoid nans
             if isinstance(weight, numbers.Number):

@@ -35,14 +35,14 @@ class ELBO(object):
                  num_particles=1,
                  trace_graph=False,
                  enum_discrete=False,
-                 analytic_kl=False):
+                 mean_field_analytic_entropy=False):
         super(ELBO, self).__init__()
         self.num_particles = num_particles
         self.trace_graph = trace_graph
         if self.trace_graph:
             self.which_elbo = TraceGraph_ELBO(num_particles=num_particles, enum_discrete=enum_discrete)
         else:
-            self.which_elbo = Trace_ELBO(num_particles=num_particles, enum_discrete=enum_discrete, analytic_kl=analytic_kl)
+            self.which_elbo = Trace_ELBO(num_particles=num_particles, enum_discrete=enum_discrete, mean_field_analytic_entropy=mean_field_analytic_entropy)
 
     def loss(self, model, guide, *args, **kwargs):
         """

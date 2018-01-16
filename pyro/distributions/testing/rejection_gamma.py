@@ -30,7 +30,7 @@ class RejectionStandardGamma(ImplicitRejector):
         x = self.alpha.new(self.alpha.shape).normal_()
         y = 1.0 + self._c * x
         v = y * y * y
-        return (self._d * v).clamp_(1e-30, 1e30)
+        return (self._d * v).clamp_(1e-20, 1e30)
 
     def log_prob_accept(self, value):
         v = value / self._d
@@ -96,6 +96,11 @@ class ShapeAugmentedGamma(Gamma):
         log_pdf = self.batch_log_pdf(boosted_x)
         return ScoreParts(log_pdf, score_function, log_pdf)
 
+    def entropy(self):
+        term1 = self.alpha - torch.log(self.beta)
+        term2 = torch.lgamma(self.alpha)
+        term3 = (1.0 - self.alpha) * torch.digamma(self.alpha)
+        return (term1 + term2 + term3).sum()
 
 def kl_gamma_gamma(p, q):
     p = getattr(p, 'torch_dist', p)
