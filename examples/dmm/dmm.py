@@ -261,7 +261,7 @@ def main(args):
 
     # jsb_file_loc = "./data/jsb_processed.pkl"
     # ingest training/validation/test data from disk
-    data = poly.load_data()
+    data = poly.load_data(args.dataset)
     training_seq_lengths = data['train']['sequence_lengths']
     training_data_sequences = data['train']['sequences']
     test_seq_lengths = data['test']['sequence_lengths']
@@ -428,6 +428,7 @@ if __name__ == '__main__':
     parser.add_argument('-lmod', '--load-model', type=str, default='')
     parser.add_argument('-sopt', '--save-opt', type=str, default='')
     parser.add_argument('-smod', '--save-model', type=str, default='')
+    parser.add_argument('-ds', '--dataset', type=str, default='jsb_chorales')
     parser.add_argument('--cuda', action='store_true')
     parser.add_argument('-l', '--log', type=str, default='dmm.log')
     args = parser.parse_args()

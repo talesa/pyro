@@ -17,12 +17,10 @@ import torch
 import torch.nn as nn
 from torch.autograd import Variable
 import numpy as np
-from observations import jsb_chorales, musedata, nottingham, piano_midi_de
+import observations # import jsb_chorales, musedata, nottingham, piano_midi_de
 from os.path import join, exists
 import six.moves.cPickle as pickle
 from pyro.util import ng_zeros
-
-dataset = piano_midi_de
 
 def count_list(l):
     count = [len(l)]
@@ -41,14 +39,14 @@ def find_T_max(data):
     return max(T_max)
 
 # this function processes the raw data; in particular it unsparsifies it
-def process_data(base_path, filename=None, T_max=160, min_note=21, note_range=88):
+def process_data(base_path, filename=None, T_max=160, min_note=21, note_range=88, dataset='jsb_chorales'):
     if filename is not None:
         output = join(base_path, filename)
         if exists(output):
             return
 
     print("processing raw polyphonic music data...")
-    data = dataset(base_path)
+    data = getattr(observations, dataset)(base_path)
     
     T_max = find_T_max(data)
     
@@ -74,9 +72,9 @@ def process_data(base_path, filename=None, T_max=160, min_note=21, note_range=88
     return processed_dataset
 
 
-def load_data():
+def load_data(dataset='jsb_chorales'):
     base_path = './data'
-    return process_data(base_path=base_path)
+    return process_data(base_path=base_path, dataset=dataset)
 
 # this logic will be initiated upon import
 base_path = './data'
