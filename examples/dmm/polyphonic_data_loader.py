@@ -17,20 +17,41 @@ import torch
 import torch.nn as nn
 from torch.autograd import Variable
 import numpy as np
-from observations import jsb_chorales
+from observations import jsb_chorales, musedata, nottingham, piano_midi_de
 from os.path import join, exists
 import six.moves.cPickle as pickle
 from pyro.util import ng_zeros
 
+dataset = piano_midi_de
+
+def count_list(l):
+    count = [len(l)]
+    for e in l:
+        if isinstance(e, list):
+            count.append(count_list(e))
+    return count
+    
+def find_T_max(data):
+    T_max = []
+    for split, data_split in zip(['train', 'test', 'valid'], data):
+        n_seqs = len(data_split)
+        for seq in range(n_seqs):
+            seq_length = len(data_split[seq])
+            T_max.append(seq_length)
+    return max(T_max)
 
 # this function processes the raw data; in particular it unsparsifies it
-def process_data(base_path, filename, T_max=160, min_note=21, note_range=88):
-    output = join(base_path, filename)
-    if exists(output):
-        return
+def process_data(base_path, filename=None, T_max=160, min_note=21, note_range=88):
+    if filename is not None:
+        output = join(base_path, filename)
+        if exists(output):
+            return
 
     print("processing raw polyphonic music data...")
-    data = jsb_chorales(base_path)
+    data = dataset(base_path)
+    
+    T_max = find_T_max(data)
+    
     processed_dataset = {}
     for split, data_split in zip(['train', 'test', 'valid'], data):
         processed_dataset[split] = {}
@@ -45,13 +66,21 @@ def process_data(base_path, filename, T_max=160, min_note=21, note_range=88):
                 slice_length = len(note_slice)
                 if slice_length > 0:
                     processed_dataset[split]['sequences'][seq, t, note_slice] = np.ones((slice_length))
-    pickle.dump(processed_dataset, open(output, "wb"))
-    print("dumped processed data to %s" % output)
+                    
+    if filename is not None:
+        pickle.dump(processed_dataset, open(output, "wb"))
+        print("dumped processed data to %s" % output)
+        
+    return processed_dataset
 
+
+def load_data():
+    base_path = './data'
+    return process_data(base_path=base_path)
 
 # this logic will be initiated upon import
 base_path = './data'
-process_data(base_path, "jsb_processed.pkl")
+# process_data(base_path, "jsb_processed.pkl")
 
 
 # this function takes a numpy mini-batch and reverses each sequence

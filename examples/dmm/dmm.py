@@ -259,9 +259,9 @@ def main(args):
     log = get_logger(args.log)
     log(args)
 
-    jsb_file_loc = "./data/jsb_processed.pkl"
+    # jsb_file_loc = "./data/jsb_processed.pkl"
     # ingest training/validation/test data from disk
-    data = pickle.load(open(jsb_file_loc, "rb"))
+    data = poly.load_data()
     training_seq_lengths = data['train']['sequence_lengths']
     training_data_sequences = data['train']['sequences']
     test_seq_lengths = data['test']['sequence_lengths']
