@@ -80,14 +80,12 @@ class SSVAE(nn.Module):
         # and potentially applying separate activation functions on them
         # e.g. in this network the final output is of size [z_dim,z_dim]
         # to produce mu and sigma, and apply different activations [None,Exp] on them
-        self.encoder_z = MLP([self.input_size + self.output_size] +
-                             hidden_sizes + [[z_dim, z_dim]],
+        self.encoder_z = MLP([self.input_size + self.output_size] + hidden_sizes + [[z_dim, z_dim]],
                              activation=nn.Softplus,
                              output_activation=[None, Exp],
                              use_cuda=self.use_cuda)
 
-        self.decoder = MLP([z_dim + self.output_size] +
-                           hidden_sizes + [self.input_size],
+        self.decoder = MLP([z_dim + self.output_size] + hidden_sizes + [self.input_size],
                            activation=nn.Softplus,
                            output_activation=ClippedSigmoid,
                            epsilon_scale=self.epsilon_scale,
@@ -394,21 +392,23 @@ def run_inference_ss_vae(args):
                 corresponding_test_acc = test_accuracy
 
             print_and_log(logger, str_print)
+            
+            if i % == 0:
+                visualize(ss_vae, viz, data_loaders["test"])
 
         final_test_accuracy = get_accuracy(data_loaders["test"], ss_vae.classifier, args.batch_size)
         print_and_log(logger, "best validation accuracy {} corresponding testing accuracy {} "
                       "last testing accuracy {}".format(best_valid_acc, corresponding_test_acc, final_test_accuracy))
 
         # visualize the conditional samples
-        visualize(ss_vae, viz, data_loaders["test"])
+        # visualize(ss_vae, viz, data_loaders["test"])
     finally:
         # close the logger file object if we opened it earlier
         if args.logfile is not None:
             logger.close()
 
 
-EXAMPLE_RUN = "example run: python example_M2.py --seed 0 -cuda -ne 2 --aux-loss -alm 300 -enum -sup 3000 " \
-              "-zd 20 -hl 400 200 -lr 0.001 -b1 0.95 -bs 500 -eps 1e-7 -log ./tmp.log"
+EXAMPLE_RUN = "example run: python ss_vae_M2.py --seed 0 -cuda -ne 2 --aux-loss -alm 300 -enum -sup 3000 -zd 20 -hl 400 200 -lr 0.001 -b1 0.95 -bs 500 -eps 1e-7 -log ./tmp.log --visualize"
 
 if __name__ == "__main__":
     import argparse
