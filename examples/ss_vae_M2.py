@@ -393,7 +393,7 @@ def run_inference_ss_vae(args):
 
             print_and_log(logger, str_print)
             
-            if i % == 0:
+            if i % 10 == 0:
                 visualize(ss_vae, viz, data_loaders["test"])
 
         final_test_accuracy = get_accuracy(data_loaders["test"], ss_vae.classifier, args.batch_size)
@@ -408,7 +408,7 @@ def run_inference_ss_vae(args):
             logger.close()
 
 
-EXAMPLE_RUN = "example run: python ss_vae_M2.py --seed 0 -cuda -ne 2 --aux-loss -alm 300 -enum -sup 3000 -zd 20 -hl 400 200 -lr 0.001 -b1 0.95 -bs 500 -eps 1e-7 -log ./tmp.log --visualize"
+EXAMPLE_RUN = "example run: python ss_vae_M2.py --seed 0 -cuda -ne 300 --aux-loss -alm 300 -enum -sup 3000 -zd 20 -hl 400 200 -lr 0.001 -b1 0.95 -bs 500 -eps 1e-7 -log ./tmp.log --visualize"
 
 if __name__ == "__main__":
     import argparse
