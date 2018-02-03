@@ -15,17 +15,21 @@ class Multinomial(TorchDistribution):
     Multinomial distribution.
 
     Distribution over counts for `n` independent `Categorical(ps)` trials.
+    Note that `n` need not be specified if only :meth:`log_pdf` is used, e.g.
+    if this distribution is used only in :meth:`pyro.observe` statements.
 
     This is often used in conjunction with `torch.nn.Softmax` to ensure
     probabilites `ps` are normalized.
 
     :param torch.autograd.Variable ps: Probabilities (real). Should be positive
         and should normalized over the rightmost axis.
-    :param int n: Number of trials. Should be positive.
+    :param int n: Optional number of trials. Should be positive. Defaults to 1.
+        Note that this is ignored by `.log_pdf()` which infers a `n` from each
+        event.
     """
     enumerable = True
 
-    def __init__(self, ps, n, *args, **kwargs):
+    def __init__(self, ps, n=1, *args, **kwargs):
         if isinstance(n, Variable):
             n = n.data
         if not isinstance(n, numbers.Number):
@@ -34,14 +38,4 @@ class Multinomial(TorchDistribution):
             n = n.view(-1)[0]
         n = int(n)
         torch_dist = torch.distributions.Multinomial(n, probs=ps)
-        x_shape = ps.shape
-        event_dim = 1
-        super(Multinomial, self).__init__(torch_dist, x_shape, event_dim, *args, **kwargs)
-
-    def batch_log_pdf(self, x):
-        batch_log_pdf_shape = self.batch_shape(x) + (1,)
-        log_pxs = self.torch_dist.log_prob(x)
-        batch_log_pdf = log_pxs.view(batch_log_pdf_shape)
-        if self.log_pdf_mask is not None:
-            batch_log_pdf = batch_log_pdf * self.log_pdf_mask
-        return batch_log_pdf
+        super(Multinomial, self).__init__(torch_dist, *args, **kwargs)
